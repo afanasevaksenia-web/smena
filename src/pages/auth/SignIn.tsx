@@ -3,6 +3,11 @@ import { Navigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../state/auth'
 
+// Общая гостевая учётка с уже наполненным демо-проектом (вымышленные данные).
+// Не секрет: доступ сюда сознательно даётся всем без регистрации.
+const DEMO_EMAIL = 'demo@smena.app'
+const DEMO_PASSWORD = 'smena-demo-2026'
+
 export default function SignIn() {
   const { session, loading } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
@@ -32,6 +37,20 @@ export default function SignIn() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось выполнить вход')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDemoLogin() {
+    setError(null)
+    setNotice(null)
+    setBusy(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
+      if (error) throw error
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось войти в демо-режим')
     } finally {
       setBusy(false)
     }
@@ -89,6 +108,24 @@ export default function SignIn() {
         >
           {mode === 'signin' ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
         </button>
+
+        <div className="my-6 flex items-center gap-3 text-xs text-[var(--color-text-faint)]">
+          <div className="h-px flex-1 bg-[var(--color-border)]" />
+          <span>или</span>
+          <div className="h-px flex-1 bg-[var(--color-border)]" />
+        </div>
+
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleDemoLogin}
+          className="tap-target w-full rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-center font-medium text-[var(--color-text)] disabled:opacity-60"
+        >
+          Открыть демо без регистрации
+        </button>
+        <p className="mt-2 text-center text-xs text-[var(--color-text-faint)]">
+          Общая гостевая учётка с уже наполненным демо-проектом. Данные вымышленные, видны всем, кто заходит через эту кнопку.
+        </p>
       </div>
     </div>
   )
