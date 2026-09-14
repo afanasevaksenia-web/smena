@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #17181a;
+  --color-bg-raised: #202225;
+  --color-bg-sunken: #101113;
+  --color-border: #2e3134;
+  --color-text: #edeeef;
+  --color-text-dim: #a3a8ad;
+  --color-text-faint: #6d7278;
+  --color-accent: #c3f53c;
+  --color-accent-dim: #93bb1f;
+  --color-accent-text: #16180a;
+  --color-danger: #ff6b5e;
+  --color-warn: #ffb84d;
+  --color-ok: #57d18c;
+  --color-info: #6fb7ff;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+/* Large hit targets for outdoor / gloved use */
+button, a, input, select, textarea {
+  font-family: inherit;
+}
+
+.tap-target {
+  min-height: 44px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
