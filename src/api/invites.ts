@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { Tables } from '../types/db'
+import type { Project } from './projects'
 
 export type Invite = Tables<'invites'>
 
@@ -34,8 +35,19 @@ export async function revokeInvite(id: string) {
   if (error) throw error
 }
 
-export async function redeemInvite(code: string, displayName: string) {
+/**
+ * redeem_invite намеренно не бросает Postgres-исключение на ожидаемых
+ * отказах (неверный код / истёк / rate-limit) — иначе Postgres откатывает
+ * весь вызов целиком, включая запись неудачной попытки, и rate-limit
+ * никогда не сработает. Вместо этого функция возвращает {ok, error,
+ * project}, и уже здесь, на клиенте, отказ превращается в обычную JS-ошибку.
+ */
+export async function redeemInvite(code: string, displayName: string): Promise<Project> {
   const { data, error } = await supabase.rpc('redeem_invite', { p_code: code, p_display_name: displayName })
   if (error) throw error
-  return data
+  const result = data as unknown as { ok: boolean; error: string | null; project: Project | null }
+  if (!result.ok || !result.project) {
+    throw new Error(result.error ?? 'Не удалось присоединиться к проекту')
+  }
+  return result.project
 }

@@ -869,18 +869,7 @@ export type Database = {
       }
       redeem_invite: {
         Args: { p_code: string; p_display_name: string }
-        Returns: {
-          created_at: string
-          created_by: string
-          current_shift_id: string | null
-          first_shift_date: string | null
-          id: string
-          location_name: string | null
-          name: string
-          settings: Json
-          status: Database["public"]["Enums"]["project_status"]
-          updated_at: string
-        }
+        Returns: Json
       }
       remove_member: {
         Args: { p_project: string; p_user: string }
