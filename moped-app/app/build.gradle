@@ -1,0 +1,18 @@
+plugins {
+  id 'com.android.application'
+}
+android {
+  namespace 'ru.mopedroute.navigator'
+  compileSdk 35
+  defaultConfig {
+    applicationId 'ru.mopedroute.navigator'
+    minSdk 26
+    targetSdk 32
+    versionCode 1
+    versionName '0.1.0'
+  }
+  buildTypes {
+    release { minifyEnabled false }
+    debug { minifyEnabled false }
+  }
+}
