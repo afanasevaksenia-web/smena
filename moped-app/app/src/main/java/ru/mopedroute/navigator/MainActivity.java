@@ -162,7 +162,7 @@ public class MainActivity extends Activity {
                       .put("directions_options",new JSONObject().put("units","kilometers"));
                     String url="https://valhalla1.openstreetmap.de/route?json="+URLEncoder.encode(obj.toString(),"UTF-8");
                     send("route",id,get(url));
-                }catch(Exception e){send("error",id,new JSONObject().put("message",e.getMessage()).toString());}
+                }catch(Exception e){send("error",id,e.getMessage()==null?"Ошибка сети":e.getMessage());}
             });
         }
         @JavascriptInterface public void gps(){runOnUiThread(()->startGps());}
