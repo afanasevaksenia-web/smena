@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Мопед Путь</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--ink:#101a20;--shade:#1a262b;--edge:#344047;--accent:#c79a6b;--text:#f6f1e9;--muted:#abb9be;--danger:#eebd9e}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--ink);color:var(--text);font-family:system-ui,-apple-system,"Roboto",sans-serif}body{min-height:100vh;padding-bottom:28px}
+.header{padding:19px 17px 15px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:24px;font-weight:900;letter-spacing:-.8px;line-height:1}.brand b{color:var(--accent)}
+.subtitle{margin-top:5px;color:var(--muted);font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.tag{font-size:10px;border:1px solid #68767d;border-radius:99px;padding:7px 9px;color:#dce5e4;white-space:nowrap}
+.map-wrap{height:39vh;min-height:265px;background:#dce4db;position:relative}
+#map{height:100%;width:100%;z-index:1}
+.map-top{position:absolute;top:11px;right:10px;z-index:1000;display:grid;gap:8px}
+.map-btn{border:0;border-radius:12px;width:42px;height:42px;background:white;color:#17232a;font-size:21px;box-shadow:0 3px 16px #0003}
+.panel{background:var(--ink);padding:14px 14px 0}
+.modes{display:grid;grid-template-columns:1fr 1fr;background:var(--shade);padding:4px;border-radius:14px;gap:5px;margin-bottom:13px}
+.mode{background:none;border:0;border-radius:10px;color:#a8b3b9;font-weight:700;padding:12px 4px;font-size:12px}
+.mode.active{color:#24180c;background:var(--accent)}
+.loc-row{display:flex;gap:10px;align-items:center;margin-bottom:9px}
+.dot{width:12px;height:12px;border:3px solid #90aeb5;border-radius:100%;flex-shrink:0}
+.dot.dest{border-color:var(--accent)}
+input{width:100%;border:1px solid var(--edge);background:#1b292e;color:white;border-radius:12px;padding:13px;font-size:15px;outline:none;min-width:0}
+input:focus{border-color:var(--accent)}
+.circle-btn{border:1px solid var(--edge);background:#213037;color:var(--text);width:46px;height:44px;border-radius:12px;flex-shrink:0;font-size:20px}
+.route-btn{border:0;background:var(--accent);color:#171717;border-radius:13px;width:100%;padding:15px;font-size:16px;font-weight:850;letter-spacing:.1px}
+.secondary{border:1px solid var(--edge);background:#1c2a30;color:#f7f7f5;border-radius:12px;padding:12px 14px;font-weight:650;font-size:13px}
+.actions{display:flex;gap:8px;margin:11px 0 0}.actions .secondary{flex:1}
+.hint{font-size:11px;line-height:1.5;color:#aab7bb;margin:12px 1px 0}
+.status{margin-top:11px;padding:11px 13px;background:#253139;border-left:3px solid var(--accent);border-radius:7px;font-size:12px;line-height:1.5}
+.status.error{border-color:#e9887d;color:#ffdad5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{padding:12px 6px;background:#1c2a30;border:1px solid #2b3a40;border-radius:11px;text-align:center}
+.stat strong{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.stat span{display:block;font-size:10px;margin-top:4px;color:#a5b3b8}
+.section-title{font-weight:800;margin:22px 0 10px;font-size:16px;letter-spacing:.2px}
+.warning{padding:12px;background:#262b2a;border-radius:10px;color:#d7d6c8;font-size:11px;line-height:1.5;border:1px solid #4c4f44}
+.maneuver{display:flex;align-items:flex-start;gap:9px;padding:12px 0;border-bottom:1px solid #27363c;font-size:13px;line-height:1.35;color:#e5e7e3}
+.maneuver i{font-style:normal;color:var(--accent);font-size:17px;width:24px}
+.maneuver small{display:block;color:#a7b5b8;margin-top:5px}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:9px}.settings label{display:block;font-size:11px;color:#bac5c7}.settings input{margin-top:6px;padding:10px}
+.foot{font-size:11px;color:#91a0a5;line-height:1.45;padding:18px 2px 25px}a{color:#d2b593}
+.leaflet-container{font-family:system-ui,sans-serif}
+</style></head>
+<body>
+<header class="header">
+ <div><div class="brand">МОПЕД <b>ПУТЬ</b></div><div class="subtitle">Дороги поменьше · Россия побольше</div></div>
+ <div class="tag">ANDROID · BETA</div>
+</header>
+<div class="map-wrap"><div id="map"></div><div class="map-top"><button class="map-btn" onclick="requestGps()" title="Моё положение">⌖</button><button class="map-btn" onclick="mapZoom(1)" title="Приблизить">+</button><button class="map-btn" onclick="mapZoom(-1)" title="Отдалить">−</button></div></div>
+<main class="panel">
+  <div class="modes"><button class="mode active" data-mode="moped" onclick="selectMode('moped')">Мопед ≤50 см³</button><button class="mode" data-mode="motorcycle" onclick="selectMode('motorcycle')">Мотоцикл</button></div>
+  <div class="loc-row"><div class="dot"></div><input id="from" placeholder="Откуда" value="Москва"><button class="circle-btn" onclick="requestGps()" title="Использовать GPS">⌖</button></div>
+  <div class="loc-row"><div class="dot dest"></div><input id="to" placeholder="Куда" value="Кольчугино"><button class="circle-btn" onclick="swapPoints()" title="Поменять местами">⇅</button></div>
+  <div class="loc-row" id="viaRow" style="display:none"><div class="dot"></div><input id="via" placeholder="Через город / точку"><button class="circle-btn" onclick="toggleVia()" title="Убрать точку">×</button></div>
+  <button class="route-btn" onclick="buildRoute()">Проложить спокойный маршрут</button>
+  <div class="actions"><button class="secondary" onclick="toggleVia()">+ Через точку</button><button class="secondary" onclick="saveRoute()">☆ Сохранить</button><button class="secondary" onclick="exportGpx()">⇩ GPX</button></div>
+  <div id="status" class="status">Введите начало и конец поездки. Пробный маршрут: Москва → Кольчугино.</div>
+  <div id="stats" class="stats" style="display:none">
+   <div class="stat"><strong id="distance">—</strong><span>Километры</span></div>
+   <div class="stat"><strong id="duration">—</strong><span>Часы в пути*</span></div>
+   <div class="stat"><strong id="fuel">—</strong><span>Литры топлива</span></div>
+  </div>
+  <div class="section-title">Бак и расход</div>
+  <div class="settings"><label>Расход, л / 100 км<input id="consumption" inputmode="decimal" type="number" value="2.5" min="0.5" max="20" step=".1" onchange="updateStats()"></label><label>Полезный объём бака, л<input id="tank" inputmode="decimal" type="number" value="12" min="1" max="50" step=".5" onchange="updateStats()"></label></div>
+  <div id="range" class="hint">Укажи объём бака по фактической заправке. Запас хода считается приблизительно.</div>
+  <div class="section-title">Повороты и этапы</div>
+  <div id="steps"><div class="hint">Построй маршрут, чтобы увидеть расстояния и манёвры.</div></div>
+  <div class="section-title">Важное</div>
+  <div class="warning">Маршрутизатор старается избегать автомагистралей и скоростных дорог, но НЕ гарантирует проверку всех запретов и знаков. В России мопедам запрещены автомагистрали и дороги для автомобилей. Маркировка «49» не превращает фактический мотор 110 см³ в мопед. Для поездки соблюдай ПДД, проверяй указатели и выбирай безопасные участки. Сервис маршрутов требует интернета; фоновая голосовая навигация и офлайн-карты пока отсутствуют.</div>
+  <div class="foot">Карта © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>. Пробная маршрутизация Valhalla / OSM, зависит от доступности внешнего сервера; длительные маршруты разбивай промежуточными точками. Версия 0.1 · Для тестирования, не основной навигатор.</div>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+let map, line, gpsMarker, mode='moped',gps=null,points=[],instructions=[],lastKm=0,job=0,openVia=false;
+const requests=new Map();
+function notice(s,bad=false){const el=document.querySelector('#status');el.textContent=s;el.className='status'+(bad?' error':'');}
+function callNative(op,...args){
+ if(!window.MopedNative) return Promise.reject(new Error('Android-модуль недоступен'));
+ return new Promise((resolve,reject)=>{
+  const id='req'+(++job);requests.set(id,{resolve,reject});
+  window.MopedNative[op](...args,id);
+  setTimeout(()=>{if(requests.has(id)){requests.delete(id);reject(new Error('Сервер долго не отвечает'))}},68000);
+ });
+}
+window.nativeResponse=function(type,id,raw){
+ const req=requests.get(id);if(!req)return;requests.delete(id);
+ if(type==='error'){req.reject(new Error(raw));return}
+ try{req.resolve(JSON.parse(raw))}catch(e){req.reject(e)}
+};
+function initMap(){
+ if(!window.L){notice('Не удалось загрузить карту. Проверь подключение к интернету.',true);return}
+ map=L.map('map',{zoomControl:false}).setView([55.75,37.62],7);
+ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:18}).addTo(map);
+}
+function mapZoom(d){if(map)map.setZoom(map.getZoom()+d)}
+function selectMode(next){mode=next;document.querySelectorAll('.mode').forEach(n=>n.classList.toggle('active',n.dataset.mode===mode));notice(mode==='moped'?'Режим мопеда: избегаем крупных трасс. Проверяй дорожные знаки.':'Режим мотоцикла: приоритет более спокойных дорог.');}
+function swapPoints(){let a=document.querySelector('#from'),b=document.querySelector('#to');[a.value,b.value]=[b.value,a.value]}
+function toggleVia(){openVia=!openVia;document.querySelector('#viaRow').style.display=openVia?'flex':'none';if(!openVia)document.querySelector('#via').value=''}
+function requestGps(){if(window.MopedNative){window.MopedNative.gps();notice('Запрошено местоположение. Разреши доступ к GPS.');}else notice('GPS работает только в Android-приложении',true)}
+window.onGps=function(lat,lon,speed){
+ gps=[lat,lon];
+ if(map){if(!gpsMarker)gpsMarker=L.circleMarker(gps,{radius:7,color:'#fff',weight:2,fillColor:'#2a9ed1',fillOpacity:1}).addTo(map).bindPopup('Ты здесь');else gpsMarker.setLatLng(gps);}
+};
+function toCoords(x){return {lat:Number(x.lat),lon:Number(x.lon)}}
+async function resolvePoint(s){
+ if(s.toLowerCase().includes('моё') || s.toLowerCase().includes('мое') || s.toLowerCase().includes('gps')){
+   if(!gps)throw new Error('GPS-позиция пока не получена — нажми ⌖ и дождись определения');
+   return {lat:gps[0],lon:gps[1]};
+ }
+ const data=await callNative('find',s);
+ if(!Array.isArray(data)||!data.length)throw new Error('Не нашёл место: '+s);
+ return toCoords(data[0]);
+}
+function decode(str,precision=6){
+ const factor=Math.pow(10,precision);let index=0,lat=0,lon=0,res=[];
+ while(index<str.length){
+  let b,shift=0,result=0;
+  do{b=str.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5}while(b>=32&&index<str.length);
+  lat+=(result&1)?~(result>>1):(result>>1);
+  shift=0;result=0;
+  do{b=str.charCodeAt(index++)-63;result|=(b&31)<<shift;shift+=5}while(b>=32&&index<str.length);
+  lon+=(result&1)?~(result>>1):(result>>1);
+  res.push([lat/factor,lon/factor]);
+ }
+ return res;
+}
+function renderRoute(data){
+ if(!data?.trip?.legs?.length)throw new Error(data?.error||'Сервис не выдал линию маршрута');
+ instructions=[];points=[];
+ for(const leg of data.trip.legs){
+  if(leg.shape){const part=decode(leg.shape);points.push(...part)}
+  instructions.push(...(leg.maneuvers||[]));
+ }
+ if(points.length<2)throw new Error('В ответе нет геометрии маршрута');
+ if(map){
+   if(line)line.remove();
+   line=L.polyline(points,{color:'#ad6d35',weight:5,opacity:.94}).addTo(map);
+   map.fitBounds(line.getBounds(),{padding:[25,25]});
+ }
+ lastKm=Number(data.trip.summary?.length||0);
+ document.querySelector('#stats').style.display='grid';
+ updateStats();
+ document.querySelector('#steps').innerHTML='';
+ const s=document.querySelector('#steps');
+ instructions.slice(0,35).forEach((m,i)=>{
+  const el=document.createElement('div');el.className='maneuver';
+  const icon=document.createElement('i');icon.textContent=i===0?'●':i===instructions.length-1?'■':'↳';
+  const label=document.createElement('div');label.style.flex='1';
+  const txt=document.createElement('div');txt.textContent=m.instruction||'Продолжайте движение';
+  const small=document.createElement('small');small.textContent=(m.length||0).toFixed(1)+' км';
+  label.append(txt,small);el.append(icon,label);s.append(el);
+ });
+ if(instructions.length>35){let end=document.createElement('div');end.className='hint';end.textContent='Показаны первые 35 манёвров из '+instructions.length;s.append(end);}
+ let saved={points,km:lastKm,steps:instructions,from:document.querySelector('#from').value,to:document.querySelector('#to').value,via:document.querySelector('#via').value};
+ try{localStorage.setItem('lastMopedRoute',JSON.stringify(saved))}catch(e){}
+ notice('Маршрут найден. Проверь дорожные знаки и участки с интенсивным движением до выезда.');
+}
+async function buildRoute(){
+ const from=document.querySelector('#from').value.trim(),to=document.querySelector('#to').value.trim(),via=document.querySelector('#via').value.trim();
+ if(!from||!to){notice('Укажи начало и конец поездки',true);return}
+ notice('Ищу города и дороги…');
+ try{
+   let stops=[await resolvePoint(from)];
+   if(openVia && via)stops.push(await resolvePoint(via));
+   stops.push(await resolvePoint(to));
+   notice('Строю маршрут с минимизацией магистралей…');
+   const data=await callNative('route',JSON.stringify(stops),mode);
+   renderRoute(data);
+ }catch(e){notice('Не удалось построить маршрут: '+e.message+'. Попробуй города поближе или добавь промежуточную точку.',true)}
+}
+function updateStats(){
+ const c=Math.max(.5,Number(document.querySelector('#consumption').value)||2.5),tank=Math.max(1,Number(document.querySelector('#tank').value)||12);
+ document.querySelector('#distance').textContent=lastKm?Math.round(lastKm).toLocaleString('ru-RU'):'—';
+ document.querySelector('#duration').textContent=lastKm?Math.round(lastKm/(mode==='moped'?36:48)):'—';
+ document.querySelector('#fuel').textContent=lastKm?(lastKm*c/100).toFixed(1):'—';
+ document.querySelector('#range').textContent='Ориентировочный запас хода с резервом 15%: '+Math.round(tank*.85/c*100)+' км. Рассчитан по расходу, не учитывает погоду и нагрузку.';
+}
+function saveRoute(){
+ if(!points.length){notice('Сначала построй маршрут',true);return}
+ try{
+  const s=JSON.parse(localStorage.getItem('savedMopedRoutes')||'[]');
+  s.unshift({from:document.querySelector('#from').value,to:document.querySelector('#to').value,km:lastKm,points,date:new Date().toISOString()});
+  localStorage.setItem('savedMopedRoutes',JSON.stringify(s.slice(0,12)));notice('Маршрут сохранён на телефоне (внутри приложения).');
+ }catch(e){notice('Не удалось сохранить маршрут',true)}
+}
+function exportGpx(){
+ if(points.length<2){notice('Сначала построй маршрут',true);return}
+ let xml='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Moped Put" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Moped Route</name><trkseg>\n'+points.map(([lat,lon])=>'<trkpt lat="'+lat.toFixed(6)+'" lon="'+lon.toFixed(6)+'"/>').join('\n')+'\n</trkseg></trk></gpx>';
+ if(window.MopedNative){MopedNative.saveGpx(xml);notice('GPX отправлен в папку «Загрузки».')}else notice('Экспорт GPX доступен в Android приложении',true);
+}
+initMap();updateStats();
+</script></body></html>
