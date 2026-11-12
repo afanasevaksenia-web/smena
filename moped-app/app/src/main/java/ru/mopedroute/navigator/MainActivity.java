@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
                     String url="https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&countrycodes=ru&q="+q;
                     send("find",id,get(url));
                     try{Thread.sleep(1000);}catch(InterruptedException ignored){}
-                }catch(Exception e){send("error",id,new JSONObject().put("message", e.getMessage()).toString());}
+                }catch(Exception e){send("error",id,(e.getMessage()==null?"Ошибка сети":e.getMessage()));}
             });
         }
         @JavascriptInterface public void route(String jsonLocations,String profile,String id){
